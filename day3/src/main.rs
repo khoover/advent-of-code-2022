@@ -1,15 +1,6 @@
 use std::io::BufRead;
-
-fn get_buffered_input() -> std::io::BufReader<std::fs::File> {
-    let mut args = std::env::args();
-    args.next().unwrap();
-    let input_path = args.next().unwrap();
-    let input_file = std::fs::OpenOptions::new()
-        .read(true)
-        .open(input_path)
-        .unwrap();
-    std::io::BufReader::new(input_file)
-}
+use common_utils::get_buffered_input;
+use itertools::Itertools;
 
 fn main() {
     let priority_sum = get_buffered_input().lines()
@@ -18,38 +9,34 @@ fn main() {
         .sum::<u64>();
     println!("Sum of priorities is {}", priority_sum);
 
-    let buf_in = get_buffered_input();
-    let mut lines = buf_in.lines();
-    let mut sum = 0u64;
-    loop {
-        let line1 = lines.next();
-        if line1.is_none() { break; }
-        let group: [String; 3] = [
-            line1.unwrap().unwrap(),
-            lines.next().unwrap().unwrap(),
-            lines.next().unwrap().unwrap()
-        ];
-        sum += group.into_iter().map(|line| {
-                let mut appears = [false; 52];
-                line.as_bytes().iter().for_each(|&byte| {
-                    let priority = utf8_byte_to_priority(byte) - 1;
-                    appears[priority as usize] = true;
-                });
-                appears
-            })
-            .fold([0u8; 52], |mut acc, appears| {
-                acc.iter_mut().zip(appears)
-                    .for_each(|(acc_val, appears_val)| {
-                        if appears_val {
-                            *acc_val += 1;
-                        }
-                    });
-                acc
-            }).into_iter().enumerate()
-            .find(|(_, count)| *count == 3).unwrap().0 as u64 + 1;
+    let group_sum = get_buffered_input().lines()
+        .map(|x| x.unwrap())
+        .chunks(3)
+        .into_iter()
+        .map(find_group_priority)
+        .sum::<u64>();
+    println!("Group sum using itertools is {}", group_sum);
+}
 
-    }
-    println!("Shared group priorities sum is {}", sum);
+fn find_group_priority(groups: impl Iterator<Item = String>) -> u64 {
+    groups.map(|line| {
+            let mut appears = [false; 52];
+            for &byte in line.as_bytes() {
+                let priority = utf8_byte_to_priority(byte) - 1;
+                appears[priority as usize] = true;
+            }
+            appears.map(|x| x as u8)
+        })
+        .reduce(|mut acc, appears| {
+            acc.iter_mut().zip(appears)
+                .for_each(|(acc_val, appears_val)| {
+                    *acc_val += appears_val;
+                });
+            acc
+        })
+        .unwrap()
+        .into_iter()
+        .find_position(|count| *count == 3).unwrap().0 as u64 + 1
 }
 
 fn find_shared_priority(contents: &str) -> u64 {
