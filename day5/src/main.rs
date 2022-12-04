@@ -7,4 +7,5 @@ use itertools::Itertools;
 
 fn main() -> Result<()> {
     let input = get_buffered_input();
+    Ok(())
 }
