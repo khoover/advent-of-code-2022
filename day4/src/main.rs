@@ -41,6 +41,7 @@ fn main() -> Result<()> {
 mod ranges {
     use std::str::FromStr;
     use anyhow::{anyhow, Result};
+    use itertools::Itertools;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct Range {
@@ -52,14 +53,10 @@ mod ranges {
         type Err = anyhow::Error;
 
         fn from_str(s: &str) -> Result<Self> {
-            let mut parts = s.split('-');
-            if let (Some(a), Some(b), None) = (parts.next(), parts.next(), parts.next()) {
-                Ok(Range {
-                    start: a.parse()?,
-                    end: b.parse()?
-                })
-            } else {
-                Err(anyhow!("Expected A-B, got {}", s))
+            let parts = s.split('-');
+            match parts.collect_tuple::<(&str, &str)>() {
+                Some((a, b)) => Ok(Range { start: a.parse()?, end: b.parse()? }),
+                None => Err(anyhow!("Expected A-B, got {}", s))
             }
         }
     }

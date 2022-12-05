@@ -51,7 +51,7 @@ fn get_initial_state(iter: impl Iterator<Item = std::io::Result<String>>) -> Res
                        stacks.get_mut(i).ok_or_else(|| anyhow!("Tried indexing out-of-bounds stack."))?.push(val);
                        Ok(())
                    },
-                   _ => Err(anyhow!("Expected [N], got {:?}", chunk))
+                   _ => Err(anyhow!("Expected [N], got {:?}", std::str::from_utf8(chunk)?))
                }
             })
     });
