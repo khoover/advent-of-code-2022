@@ -1,0 +1,13 @@
+[package]
+name = "day6"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+arrayvec = "0.7.2"
+common_utils = { path = "../common_utils" }
+index_many = "0.6.1"
+itertools = "0.10.5"
