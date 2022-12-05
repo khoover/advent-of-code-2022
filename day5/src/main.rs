@@ -93,12 +93,8 @@ impl MoveSpec {
 
         let [src, dst] = get_many_mut(stacks, UnsortedIndices([self.from - 1, self.to - 1]))
             .ok_or_else(|| anyhow!("From/To are out-of-bounds or the same."))?;
-        for _ in 0..self.count {
-            dst.push(src.pop()
-                     .ok_or_else(|| {
-                         anyhow!("Ran out of elements to pop before move spec done executing.")
-                     })?);
-        }
+        let tail = src.split_off(src.len() - self.count);
+        dst.extend(tail);
         Ok(())
     }
 }
