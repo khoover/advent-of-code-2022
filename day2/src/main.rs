@@ -26,7 +26,7 @@ impl Outcome {
 
     fn score(self, other_throw: RPS) -> u64 {
         match self {
-            Outcome::Loss => 0 + other_throw.losing_throw().score(),
+            Outcome::Loss => other_throw.losing_throw().score(),
             Outcome::Draw => 3 + other_throw.score(),
             Outcome::Win => 6 + other_throw.beating_throw().score()
         }

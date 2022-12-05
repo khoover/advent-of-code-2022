@@ -31,6 +31,7 @@ fn main() {
     println!("Total of top 3 is {}", top_three_total(line_iter));
 }
 
+#[allow(dead_code)]
 fn max_total_calories(iter: impl IntoIterator<Item = std::io::Result<Option<u64>>>) -> u64 {
     let mut curr_max: Option<u64> = None;
     iter.into_iter().try_fold(0u64, |acc, maybe_calorie_count_res| {
@@ -48,8 +49,7 @@ fn max_total_calories(iter: impl IntoIterator<Item = std::io::Result<Option<u64>
 
 fn top_three_total(iter: impl IntoIterator<Item = std::io::Result<Option<u64>>>) -> u64 {
     let mut heap: BinaryHeap<u64> = BinaryHeap::new();
-    let mut iter = iter.into_iter();
-    iter.fold(0u64, |acc, maybe_calorie_count_res| {
+    iter.into_iter().fold(0u64, |acc, maybe_calorie_count_res| {
         if let Some(count) = maybe_calorie_count_res.unwrap() {
             acc + count
         } else {
