@@ -20,12 +20,12 @@ fn main() {
 
 fn find_group_priority(groups: impl Iterator<Item = String>) -> u64 {
     groups.map(|line| {
-            let mut appears = [false; 52];
+            let mut appears = [0u8; 52];
             for &byte in line.as_bytes() {
                 let priority = utf8_byte_to_priority(byte) - 1;
-                appears[priority as usize] = true;
+                appears[priority as usize] = 1;
             }
-            appears.map(|x| x as u8)
+            appears
         })
         .reduce(|mut acc, appears| {
             acc.iter_mut().zip(appears)
