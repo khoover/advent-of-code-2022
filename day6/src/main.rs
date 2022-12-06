@@ -61,5 +61,5 @@ fn find_first_run_of_n_distinct(iter: impl IntoIterator<Item = std::io::Result<u
             return Ok(i);
         }
     }
-    bail!("No start of packet encountered.");
+    bail!("No run of {} encountered.", n);
 }
