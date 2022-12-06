@@ -1,9 +1,9 @@
 use std::collections::VecDeque;
 use std::io::Read;
 
-use anyhow::{Result, bail};
+use anyhow::{Result, Context};
 use common_utils::get_buffered_input;
-use itertools::Itertools;
+use itertools::{FoldWhile, Itertools};
 
 fn main() -> Result<()> {
     let sample1 = "mjqjpqmgbljsphdztnvjfqwrcgsmlb";
@@ -48,18 +48,23 @@ fn find_first_run_of_n_distinct(iter: impl IntoIterator<Item = std::io::Result<u
             Ok(x) => Ok((i+1, x)),
             Err(e) => Err(e)
         });
-    let mut last_four_seen: VecDeque<u8> = enumerated.by_ref()
+    let mut last_n_seen: VecDeque<u8> = enumerated.by_ref()
         .take(n)
         .map_ok(|(_, x)| x)
         .try_collect()?;
-    if last_four_seen.iter().all_unique() { return Ok(n); }
-    for res in enumerated {
-        let (i, val) = res?;
-        last_four_seen.pop_front();
-        last_four_seen.push_back(val);
-        if last_four_seen.iter().all_unique() {
-            return Ok(i);
+    if last_n_seen.iter().all_unique() { return Ok(n); }
+    enumerated.fold_while(Ok(None), |_, res| {
+        match res {
+            Err(e) => FoldWhile::Done(Err(e)),
+            Ok((i, val)) => {
+                last_n_seen.pop_front();
+                last_n_seen.push_back(val);
+                if last_n_seen.iter().all_unique() {
+                    FoldWhile::Done(Ok(Some(i)))
+                } else {
+                    FoldWhile::Continue(Ok(None))
+                }
+            }
         }
-    }
-    bail!("No run of {} encountered.", n);
+    }).into_inner()?.with_context(|| format!("No run of {} encountered", n))
 }
