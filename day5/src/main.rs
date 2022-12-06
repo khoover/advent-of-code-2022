@@ -10,17 +10,9 @@ fn main() -> Result<()> {
     let mut lines = input.lines();
     let mut state = get_initial_state(lines.by_ref())?;
     lines.map(|line_res| MoveSpec::from_str(&(line_res?)))
-        .fold_while(Ok(()), |_, move_spec| {
-            use itertools::FoldWhile;
-            let move_spec = match move_spec {
-                Ok(spec) => spec,
-                Err(e) => return FoldWhile::Done(Err(e))
-            };
-            match move_spec.do_move(&mut state) {
-                Ok(_) => FoldWhile::Continue(Ok(())),
-                Err(e) => FoldWhile::Done(Err(e))
-            }
-        }).into_inner()?;
+        .try_for_each(|move_spec_res| {
+            move_spec_res.and_then(|move_spec| move_spec.do_move(&mut state))
+        })?;
     let output_utf8_bytes: Vec<u8> = state.into_iter()
         .map(|v| v.last().copied().unwrap_or(b' '))
         .collect();
@@ -93,7 +85,7 @@ impl MoveSpec {
 
         let [src, dst] = get_many_mut(stacks, UnsortedIndices([self.from - 1, self.to - 1]))
             .ok_or_else(|| anyhow!("From/To are out-of-bounds or the same."))?;
-        let tail = src.split_off(src.len() - self.count);
+        let tail = src.drain((src.len() - self.count)..);
         dst.extend(tail);
         Ok(())
     }
