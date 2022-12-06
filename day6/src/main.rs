@@ -1,9 +1,10 @@
 use std::collections::VecDeque;
 use std::io::Read;
+use std::ops::ControlFlow;
 
-use anyhow::{Result, Context};
+use anyhow::{Result, bail};
 use common_utils::get_buffered_input;
-use itertools::{FoldWhile, Itertools};
+use itertools::Itertools;
 
 fn main() -> Result<()> {
     let sample1 = "mjqjpqmgbljsphdztnvjfqwrcgsmlb";
@@ -53,18 +54,23 @@ fn find_first_run_of_n_distinct(iter: impl IntoIterator<Item = std::io::Result<u
         .map_ok(|(_, x)| x)
         .try_collect()?;
     if last_n_seen.iter().all_unique() { return Ok(n); }
-    enumerated.fold_while(Ok(None), |_, res| {
+    match enumerated.try_fold((), |_, res| {
+        use ControlFlow::*;
+
         match res {
-            Err(e) => FoldWhile::Done(Err(e)),
+            Err(e) => Break(Err(e)),
             Ok((i, val)) => {
                 last_n_seen.pop_front();
                 last_n_seen.push_back(val);
                 if last_n_seen.iter().all_unique() {
-                    FoldWhile::Done(Ok(Some(i)))
+                    Break(Ok(i))
                 } else {
-                    FoldWhile::Continue(Ok(None))
+                    Continue(())
                 }
             }
         }
-    }).into_inner()?.with_context(|| format!("No run of {} encountered", n))
+    }) {
+        ControlFlow::Continue(_) => bail!("No run of {} encountered", n),
+        ControlFlow::Break(res) => res.map_err(Into::into)
+    }
 }
