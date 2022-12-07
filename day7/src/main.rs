@@ -4,7 +4,7 @@ use std::{
     cell::Cell
 };
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, Context};
 use common_utils::get_buffered_input;
 use itertools::Itertools;
 
@@ -48,7 +48,7 @@ impl TreeBuilder {
                             match spec {
                                 DirSpec::Root => self.cd_root(),
                                 DirSpec::Up => self.cd_up()?,
-                                DirSpec::Down(name) => self.cd_down(name)
+                                DirSpec::Down(name) => self.cd_down(name)?
                             }
                         },
                         Command::Ls => {}
@@ -86,10 +86,12 @@ impl TreeBuilder {
         }
     }
 
-    fn cd_down(&mut self, dir_name: String) {
+    fn cd_down(&mut self, dir_name: String) -> Result<()> {
         let pwd = &mut self.dirs[*self.pwd.last().unwrap()];
-        let next_idx = *pwd.children.get(&dir_name).unwrap();
+        let next_idx = *pwd.children.get(&dir_name)
+            .with_context(|| anyhow!("Couldn't find a dir named {} under {}", dir_name, pwd.name))?;
         self.pwd.push(next_idx);
+        Ok(())
     }
 
     fn build(self) -> Dir {
