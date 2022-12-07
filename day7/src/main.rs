@@ -89,7 +89,7 @@ impl TreeBuilder {
     fn cd_down(&mut self, dir_name: String) -> Result<()> {
         let pwd = &mut self.dirs[*self.pwd.last().unwrap()];
         let next_idx = *pwd.children.get(&dir_name)
-            .with_context(|| anyhow!("Couldn't find a dir named {} under {}", dir_name, pwd.name))?;
+            .with_context(|| format!("Couldn't find a dir named {} under {}", dir_name, pwd.name))?;
         self.pwd.push(next_idx);
         Ok(())
     }
