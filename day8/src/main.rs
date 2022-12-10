@@ -1,6 +1,7 @@
-use std::io::BufRead;
+use std::{io::BufRead, ops::ControlFlow};
 
 use anyhow::Result;
+use arrayvec::ArrayVec;
 use common_utils::get_buffered_input;
 use itertools::Itertools;
 
@@ -56,16 +57,19 @@ fn set_visibility<'a>(
     line: impl Iterator<Item = u8>,
     visibilities: impl Iterator<Item = &'a mut bool>,
 ) {
-    let mut max_height = 0;
-    for (height, visibility) in line.zip(visibilities) {
-        if height > max_height {
-            *visibility = true;
-            max_height = height;
-            if height == 9 {
-                break;
+    line.zip(visibilities)
+        .try_fold(0, |max_height, (height, visibility)| {
+            if height > max_height {
+                *visibility = true;
+                if height == 9 {
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(height)
+                }
+            } else {
+                ControlFlow::Continue(max_height)
             }
-        }
-    }
+        });
 }
 
 fn compute_max_scenic_score(grid: &[Vec<u8>]) -> u32 {
@@ -105,8 +109,8 @@ fn compute_max_scenic_score(grid: &[Vec<u8>]) -> u32 {
 
 fn compute_scenic_score_line(line: impl Iterator<Item = u8>) -> impl Iterator<Item = u32> {
     line.enumerate().scan(
-        Vec::new(),
-        |previous_maxes: &mut Vec<(usize, u8)>, (i, height)| {
+        ArrayVec::<(usize, u8), 10>::new(),
+        |previous_maxes, (i, height)| {
             previous_maxes.retain(|(_, previous_max)| *previous_max >= height);
             let previous_max = *previous_maxes.last().unwrap_or(&(0, 0));
             let score = (i - previous_max.0) as u32;
