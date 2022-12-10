@@ -1,15 +1,17 @@
-use std::io::BufRead;
 use common_utils::get_buffered_input;
 use itertools::Itertools;
+use std::io::BufRead;
 
 fn main() {
-    let priority_sum = get_buffered_input().lines()
+    let priority_sum = get_buffered_input()
+        .lines()
         .map(|line_result| line_result.unwrap())
         .map(|line| find_shared_priority(&line))
         .sum::<u64>();
     println!("Sum of priorities is {}", priority_sum);
 
-    let group_sum = get_buffered_input().lines()
+    let group_sum = get_buffered_input()
+        .lines()
         .map(|x| x.unwrap())
         .chunks(3)
         .into_iter()
@@ -19,7 +21,8 @@ fn main() {
 }
 
 fn find_group_priority(groups: impl Iterator<Item = String>) -> u64 {
-    groups.map(|line| {
+    groups
+        .map(|line| {
             let mut appears = [0u8; 52];
             for &byte in line.as_bytes() {
                 let priority = utf8_byte_to_priority(byte) - 1;
@@ -28,7 +31,8 @@ fn find_group_priority(groups: impl Iterator<Item = String>) -> u64 {
             appears
         })
         .reduce(|mut acc, appears| {
-            acc.iter_mut().zip(appears)
+            acc.iter_mut()
+                .zip(appears)
                 .for_each(|(acc_val, appears_val)| {
                     *acc_val += appears_val;
                 });
@@ -36,7 +40,10 @@ fn find_group_priority(groups: impl Iterator<Item = String>) -> u64 {
         })
         .unwrap()
         .into_iter()
-        .find_position(|count| *count == 3).unwrap().0 as u64 + 1
+        .find_position(|count| *count == 3)
+        .unwrap()
+        .0 as u64
+        + 1
 }
 
 fn find_shared_priority(contents: &str) -> u64 {
@@ -62,6 +69,6 @@ fn utf8_byte_to_priority(byte: u8) -> u64 {
     1 + match byte {
         b'a'..=b'z' => byte - b'a',
         b'A'..=b'Z' => byte - b'A' + 26,
-        _ => unreachable!()
+        _ => unreachable!(),
     } as u64
 }

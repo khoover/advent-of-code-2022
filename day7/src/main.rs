@@ -1,17 +1,16 @@
-use std::{
-    collections::HashMap,
-    io::BufRead,
-    cell::Cell
-};
+use std::{cell::Cell, collections::HashMap, io::BufRead};
 
-use anyhow::{Result, anyhow, Context};
+use anyhow::{anyhow, Context, Result};
 use common_utils::get_buffered_input;
 use itertools::Itertools;
 
 fn main() -> Result<()> {
     let mut builder = TreeBuilder::new();
-    builder.parse(get_buffered_input().lines()
-        .map(|line| parser::line(&line?)))?;
+    builder.parse(
+        get_buffered_input()
+            .lines()
+            .map(|line| parser::line(&line?)),
+    )?;
     let root = builder.build();
     println!("Sum is {}", root.get_sum_size_under_threshold(100000));
 
@@ -27,7 +26,7 @@ fn main() -> Result<()> {
 #[derive(Debug)]
 struct TreeBuilder {
     pwd: Vec<usize>,
-    dirs: Vec<DirBuilder>
+    dirs: Vec<DirBuilder>,
 }
 
 impl TreeBuilder {
@@ -42,32 +41,26 @@ impl TreeBuilder {
         lines.try_for_each(|line_res| {
             let line = line_res?;
             match line {
-                Line::Command(c) => {
-                    match c {
-                        Command::Dir(spec) => {
-                            match spec {
-                                DirSpec::Root => self.cd_root(),
-                                DirSpec::Up => self.cd_up()?,
-                                DirSpec::Down(name) => self.cd_down(name)?
-                            }
-                        },
-                        Command::Ls => {}
+                Line::Command(c) => match c {
+                    Command::Dir(spec) => match spec {
+                        DirSpec::Root => self.cd_root(),
+                        DirSpec::Up => self.cd_up()?,
+                        DirSpec::Down(name) => self.cd_down(name)?,
+                    },
+                    Command::Ls => {}
+                },
+                Line::Entry(e) => match e {
+                    DirOrFileEntry::File(size) => {
+                        let pwd = &mut self.dirs[*self.pwd.last().unwrap()];
+                        pwd.add_file(size);
+                    }
+                    DirOrFileEntry::Dir(name) => {
+                        let child_idx = self.dirs.len();
+                        let pwd = &mut self.dirs[*self.pwd.last().unwrap()];
+                        pwd.add_subdir(name.clone(), child_idx);
+                        self.dirs.push(DirBuilder::new(name));
                     }
                 },
-                Line::Entry(e) => {
-                    match e {
-                        DirOrFileEntry::File(size) => {
-                            let pwd = &mut self.dirs[*self.pwd.last().unwrap()];
-                            pwd.add_file(size);
-                        },
-                        DirOrFileEntry::Dir(name) => {
-                            let child_idx = self.dirs.len();
-                            let pwd = &mut self.dirs[*self.pwd.last().unwrap()];
-                            pwd.add_subdir(name.clone(), child_idx);
-                            self.dirs.push(DirBuilder::new(name));
-                        }
-                    }
-                }
             }
             Ok(())
         })
@@ -82,14 +75,15 @@ impl TreeBuilder {
     fn cd_up(&mut self) -> Result<()> {
         match self.pwd.pop() {
             Some(_) => Ok(()),
-            None => Err(anyhow!("PWD unexpectedly empty"))
+            None => Err(anyhow!("PWD unexpectedly empty")),
         }
     }
 
     fn cd_down(&mut self, dir_name: String) -> Result<()> {
         let pwd = &mut self.dirs[*self.pwd.last().unwrap()];
-        let next_idx = *pwd.children.get(&dir_name)
-            .with_context(|| format!("Couldn't find a dir named {} under {}", dir_name, pwd.name))?;
+        let next_idx = *pwd.children.get(&dir_name).with_context(|| {
+            format!("Couldn't find a dir named {} under {}", dir_name, pwd.name)
+        })?;
         self.pwd.push(next_idx);
         Ok(())
     }
@@ -104,7 +98,7 @@ impl TreeBuilder {
 struct DirBuilder {
     pub name: String,
     pub self_size: u64,
-    pub children: HashMap<String, usize>
+    pub children: HashMap<String, usize>,
 }
 
 impl DirBuilder {
@@ -112,7 +106,7 @@ impl DirBuilder {
         Self {
             name,
             self_size: 0,
-            children: HashMap::new()
+            children: HashMap::new(),
         }
     }
 
@@ -125,7 +119,9 @@ impl DirBuilder {
     }
 
     fn build(&self, other_builders: &[DirBuilder]) -> Dir {
-        let children = self.children.values()
+        let children = self
+            .children
+            .values()
             .copied()
             .map(|idx| &other_builders[idx])
             .map(|builder| builder.build(other_builders))
@@ -140,7 +136,7 @@ struct Dir {
     pub name: String,
     pub self_size: u64,
     recursive_size: Cell<Option<u64>>,
-    pub children: Vec<Dir>
+    pub children: Vec<Dir>,
 }
 
 impl Dir {
@@ -149,7 +145,7 @@ impl Dir {
             name,
             self_size,
             recursive_size: Cell::new(None),
-            children
+            children,
         }
     }
 
@@ -157,26 +153,43 @@ impl Dir {
         if let Some(size) = self.recursive_size.get() {
             size
         } else {
-            let size = self.self_size + self.children.iter().map(Dir::get_recursive_size).sum::<u64>();
+            let size = self.self_size
+                + self
+                    .children
+                    .iter()
+                    .map(Dir::get_recursive_size)
+                    .sum::<u64>();
             self.recursive_size.set(Some(size));
             size
         }
     }
 
     fn get_sum_size_under_threshold(&self, threshold: u64) -> u64 {
-        let child_sizes = self.children.iter()
+        let child_sizes = self
+            .children
+            .iter()
             .map(|child| child.get_sum_size_under_threshold(threshold))
             .sum::<u64>();
-        child_sizes + if self.get_recursive_size() <= threshold { self.get_recursive_size() } else { 0 }
+        child_sizes
+            + if self.get_recursive_size() <= threshold {
+                self.get_recursive_size()
+            } else {
+                0
+            }
     }
 
     fn get_min_size_over_threshold(&self, threshold: u64) -> Option<u64> {
-        self.children.iter()
+        self.children
+            .iter()
             .filter_map(|child| child.get_min_size_over_threshold(threshold))
             .min()
             .or_else(|| {
                 let own_size = self.get_recursive_size();
-                if own_size >= threshold { Some(own_size) } else { None }
+                if own_size >= threshold {
+                    Some(own_size)
+                } else {
+                    None
+                }
             })
     }
 }
@@ -184,7 +197,7 @@ impl Dir {
 #[derive(Debug, Clone)]
 pub enum Line {
     Command(Command),
-    Entry(DirOrFileEntry)
+    Entry(DirOrFileEntry),
 }
 
 impl From<Command> for Line {
@@ -202,7 +215,7 @@ impl From<DirOrFileEntry> for Line {
 #[derive(Debug, Clone)]
 pub enum Command {
     Ls,
-    Dir(DirSpec)
+    Dir(DirSpec),
 }
 
 impl From<DirSpec> for Command {
@@ -215,33 +228,36 @@ impl From<DirSpec> for Command {
 pub enum DirSpec {
     Up,
     Root,
-    Down(String)
+    Down(String),
 }
 
 #[derive(Debug, Clone)]
 pub enum DirOrFileEntry {
     Dir(String),
-    File(u64)
+    File(u64),
 }
 
 mod parser {
     use super::*;
 
-    use nom::{
-        error::Error,
-        branch::alt,
-        Finish,
-        combinator::map,
-        IResult,
-        sequence::{preceded, separated_pair},
-        bytes::complete::{tag, take_while},
-        character::complete::{u64 as nom_u64}
-    };
     use anyhow::{anyhow, Result};
+    use nom::{
+        branch::alt,
+        bytes::complete::{tag, take_while},
+        character::complete::u64 as nom_u64,
+        combinator::map,
+        error::Error,
+        sequence::{preceded, separated_pair},
+        Finish, IResult,
+    };
 
     pub fn line(s: &str) -> Result<Line> {
-        let (left, out) = alt((map(command, Into::into), map(entry, Into::into)))(s).finish()
-            .map_err(|e| Error { input: e.input.to_owned(), code: e.code })?;
+        let (left, out) = alt((map(command, Into::into), map(entry, Into::into)))(s)
+            .finish()
+            .map_err(|e| Error {
+                input: e.input.to_owned(),
+                code: e.code,
+            })?;
         if !left.is_empty() {
             Err(anyhow!("Did not consume all of line"))
         } else {
@@ -254,11 +270,8 @@ mod parser {
             tag("$ "),
             alt((
                 map(tag("ls"), |_| Command::Ls),
-                map(
-                    preceded(tag("cd "), dir_spec),
-                    Into::into
-                )
-            ))
+                map(preceded(tag("cd "), dir_spec), Into::into),
+            )),
         )(s)
     }
 
@@ -266,20 +279,21 @@ mod parser {
         alt((
             map(tag(".."), |_| DirSpec::Up),
             map(tag("/"), |_| DirSpec::Root),
-            map(take_while(|_| true), |name: &str| DirSpec::Down(name.to_owned()))
+            map(take_while(|_| true), |name: &str| {
+                DirSpec::Down(name.to_owned())
+            }),
         ))(s)
     }
 
     fn entry(s: &str) -> IResult<&str, DirOrFileEntry> {
         alt((
-            map(
-                preceded(tag("dir "), take_while(|_| true)),
-                |name: &str| DirOrFileEntry::Dir(name.to_owned())
-            ),
+            map(preceded(tag("dir "), take_while(|_| true)), |name: &str| {
+                DirOrFileEntry::Dir(name.to_owned())
+            }),
             map(
                 separated_pair(nom_u64::<&str, _>, tag(" "), take_while(|_| true)),
-                |(size, _)| DirOrFileEntry::File(size)
-            )
+                |(size, _)| DirOrFileEntry::File(size),
+            ),
         ))(s)
     }
 }

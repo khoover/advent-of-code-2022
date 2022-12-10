@@ -5,17 +5,20 @@ use common_utils::get_buffered_input;
 use itertools::Itertools;
 
 fn main() -> Result<()> {
-    let grid: Vec<Vec<u8>> = get_buffered_input().lines()
-        .map(|line_res| line_res.map(|line| {
-            line.as_bytes().iter().copied()
-                .map(|byte| {
-                    match byte {
+    let grid: Vec<Vec<u8>> = get_buffered_input()
+        .lines()
+        .map(|line_res| {
+            line_res.map(|line| {
+                line.as_bytes()
+                    .iter()
+                    .copied()
+                    .map(|byte| match byte {
                         b'0'..=b'9' => byte - b'0',
-                        _ => unreachable!()
-                    }
-                })
-                .collect_vec()
-        }))
+                        _ => unreachable!(),
+                    })
+                    .collect_vec()
+            })
+        })
         .try_collect()?;
 
     let num_rows = grid.len();
@@ -26,7 +29,7 @@ fn main() -> Result<()> {
         row[num_cols - 1] = true;
     }
     visible[0].fill(true);
-    visible[num_rows-1].fill(true);
+    visible[num_rows - 1].fill(true);
 
     for (line, row_visibility) in grid.iter().zip(visible.iter_mut()) {
         set_visibility(line.iter().copied(), row_visibility.iter_mut());
@@ -42,44 +45,58 @@ fn main() -> Result<()> {
 
     let num_visible = visible.iter().flatten().filter(|&&x| x).count();
     println!("There are {} visible from edges", num_visible);
-    println!("The max scenic score is {}", compute_max_scenic_score(&grid));
+    println!(
+        "The max scenic score is {}",
+        compute_max_scenic_score(&grid)
+    );
     Ok(())
 }
 
-fn set_visibility<'a>(line: impl Iterator<Item = u8>, visibilities: impl Iterator<Item = &'a mut bool>) {
+fn set_visibility<'a>(
+    line: impl Iterator<Item = u8>,
+    visibilities: impl Iterator<Item = &'a mut bool>,
+) {
     let mut max_height = 0;
     for (height, visibility) in line.zip(visibilities) {
         if height > max_height {
             *visibility = true;
             max_height = height;
-            if height == 9 { break; }
+            if height == 9 {
+                break;
+            }
         }
     }
 }
 
 fn compute_max_scenic_score(grid: &[Vec<u8>]) -> u32 {
-    let mut products: Vec<Vec<u32>> = grid.iter()
-        .map(
-            |row| compute_scenic_score_line(row.iter().copied())
-                .collect_vec()
-        )
+    let mut products: Vec<Vec<u32>> = grid
+        .iter()
+        .map(|row| compute_scenic_score_line(row.iter().copied()).collect_vec())
         .collect_vec();
-    products.iter_mut().zip(grid).for_each(|(product_row, grid_row)| {
-        let rev_scenics = compute_scenic_score_line(grid_row.iter().rev().copied());
-        product_row.iter_mut().rev().zip(rev_scenics)
-            .for_each(|(elem, new_score)| *elem *= new_score);
-    });
+    products
+        .iter_mut()
+        .zip(grid)
+        .for_each(|(product_row, grid_row)| {
+            let rev_scenics = compute_scenic_score_line(grid_row.iter().rev().copied());
+            product_row
+                .iter_mut()
+                .rev()
+                .zip(rev_scenics)
+                .for_each(|(elem, new_score)| *elem *= new_score);
+        });
 
     let num_cols = grid[0].len();
     for i in 0..num_cols {
         let grid_col = grid.iter().map(|row| row[i]);
         let product_col = products.iter_mut().map(|row| &mut row[i]);
-        product_col.zip(compute_scenic_score_line(grid_col))
+        product_col
+            .zip(compute_scenic_score_line(grid_col))
             .for_each(|(elem, new_score)| *elem *= new_score);
 
         let grid_col_rev = grid.iter().rev().map(|row| row[i]);
         let product_col_rev = products.iter_mut().rev().map(|row| &mut row[i]);
-        product_col_rev.zip(compute_scenic_score_line(grid_col_rev))
+        product_col_rev
+            .zip(compute_scenic_score_line(grid_col_rev))
             .for_each(|(elem, new_score)| *elem *= new_score);
     }
 
@@ -87,8 +104,9 @@ fn compute_max_scenic_score(grid: &[Vec<u8>]) -> u32 {
 }
 
 fn compute_scenic_score_line(line: impl Iterator<Item = u8>) -> impl Iterator<Item = u32> {
-    line.enumerate()
-        .scan(Vec::new(), |previous_maxes: &mut Vec<(usize, u8)>, (i, height)| {
+    line.enumerate().scan(
+        Vec::new(),
+        |previous_maxes: &mut Vec<(usize, u8)>, (i, height)| {
             previous_maxes.retain(|(_, previous_max)| *previous_max >= height);
             let previous_max = *previous_maxes.last().unwrap_or(&(0, 0));
             let score = (i - previous_max.0) as u32;
@@ -97,6 +115,6 @@ fn compute_scenic_score_line(line: impl Iterator<Item = u8>) -> impl Iterator<It
             }
             previous_maxes.push((i, height));
             Some(score)
-        })
+        },
+    )
 }
-

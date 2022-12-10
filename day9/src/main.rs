@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::io::BufRead;
 
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use common_utils::get_buffered_input;
 
 fn main() -> Result<()> {
@@ -16,11 +16,19 @@ fn main() -> Result<()> {
 #[test]
 fn test_sample() {
     static SAMPLE: &str = "R 4\nU 4\nL 3\nD 1\nR 4\nD 1\nL 5\nR 2";
-    assert_eq!(13, get_distinct_spaces::<2>(SAMPLE.lines().map(|line| { Ok(line.to_owned()) })).unwrap());
-    assert_eq!(1, get_distinct_spaces::<10>(SAMPLE.lines().map(|line| { Ok(line.to_owned()) })).unwrap());
+    assert_eq!(
+        13,
+        get_distinct_spaces::<2>(SAMPLE.lines().map(|line| { Ok(line.to_owned()) })).unwrap()
+    );
+    assert_eq!(
+        1,
+        get_distinct_spaces::<10>(SAMPLE.lines().map(|line| { Ok(line.to_owned()) })).unwrap()
+    );
 }
 
-fn get_distinct_spaces<const KNOTS: usize>(iter: impl Iterator<Item = std::io::Result<String>>) -> Result<usize> {
+fn get_distinct_spaces<const KNOTS: usize>(
+    iter: impl Iterator<Item = std::io::Result<String>>,
+) -> Result<usize> {
     let mut visited_spaces: HashSet<(i16, i16)> = HashSet::new();
     visited_spaces.insert((0, 0));
     iter.map(|line_res| -> Result<Move> {
@@ -31,23 +39,23 @@ fn get_distinct_spaces<const KNOTS: usize>(iter: impl Iterator<Item = std::io::R
         }
         Ok(mov)
     })
-        .try_fold([(0,0); KNOTS], |mut knots, mov| {
-            let Move { dir, steps } = mov?;
-            let (x, y) = dir.into();
-            for _ in 0..steps {
-                knots[0].0 += x;
-                knots[0].1 += y;
-                for i in 0..KNOTS-1 {
-                    if !is_adjacent(knots[i], knots[i+1]) {
-                        knots[i+1] = move_towards_head(knots[i], knots[i+1]);
-                    } else {
-                        break;
-                    }
+    .try_fold([(0, 0); KNOTS], |mut knots, mov| {
+        let Move { dir, steps } = mov?;
+        let (x, y) = dir.into();
+        for _ in 0..steps {
+            knots[0].0 += x;
+            knots[0].1 += y;
+            for i in 0..KNOTS - 1 {
+                if !is_adjacent(knots[i], knots[i + 1]) {
+                    knots[i + 1] = move_towards_head(knots[i], knots[i + 1]);
+                } else {
+                    break;
                 }
-                visited_spaces.insert(knots[KNOTS-1]);
             }
-            Ok::<_, anyhow::Error>(knots)
-        })?;
+            visited_spaces.insert(knots[KNOTS - 1]);
+        }
+        Ok::<_, anyhow::Error>(knots)
+    })?;
     Ok(visited_spaces.len())
 }
 
@@ -56,13 +64,16 @@ fn is_adjacent(head: (i16, i16), tail: (i16, i16)) -> bool {
 }
 
 fn move_towards_head(head: (i16, i16), tail: (i16, i16)) -> (i16, i16) {
-    (tail.0 + (head.0 - tail.0).signum(), tail.1 + (head.1 - tail.1).signum())
+    (
+        tail.0 + (head.0 - tail.0).signum(),
+        tail.1 + (head.1 - tail.1).signum(),
+    )
 }
 
 #[derive(Debug, Clone, Copy)]
 struct Move {
     pub dir: Direction,
-    pub steps: u16
+    pub steps: u16,
 }
 
 impl From<Move> for (i16, i16) {
@@ -77,7 +88,7 @@ enum Direction {
     Up,
     Down,
     Left,
-    Right
+    Right,
 }
 
 impl From<Direction> for (i16, i16) {
@@ -86,7 +97,7 @@ impl From<Direction> for (i16, i16) {
             Direction::Up => (0, 1),
             Direction::Down => (0, -1),
             Direction::Left => (-1, 0),
-            Direction::Right => (1, 0)
+            Direction::Right => (1, 0),
         }
     }
 }
@@ -95,14 +106,13 @@ mod parse {
     use super::*;
 
     use nom::{
-        error::Error,
-        Finish,
         branch::alt,
-        combinator::{map, value},
-        IResult,
-        sequence::separated_pair,
         bytes::complete::tag,
-        character::complete::{u16 as nom_u16}
+        character::complete::u16 as nom_u16,
+        combinator::{map, value},
+        error::Error,
+        sequence::separated_pair,
+        Finish, IResult,
     };
 
     use anyhow::Result;
@@ -112,15 +122,19 @@ mod parse {
             value(Direction::Up, tag("U")),
             value(Direction::Down, tag("D")),
             value(Direction::Left, tag("L")),
-            value(Direction::Right, tag("R"))
+            value(Direction::Right, tag("R")),
         ))(s)
     }
 
     pub(super) fn parse_move(s: &str) -> Result<(&str, Move)> {
         Ok(map(
             separated_pair(direction, tag(" "), nom_u16),
-            |(dir, steps)| Move { dir, steps }
-        )(s).finish()
-            .map_err(|e| Error { input: e.input.to_owned(), code: e.code })?)
+            |(dir, steps)| Move { dir, steps },
+        )(s)
+        .finish()
+        .map_err(|e| Error {
+            input: e.input.to_owned(),
+            code: e.code,
+        })?)
     }
 }
