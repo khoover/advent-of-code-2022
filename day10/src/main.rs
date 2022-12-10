@@ -31,11 +31,11 @@ fn main() -> Result<()> {
             .enumerate()
             .map(|(i, res)| {
                 res.map(|val| {
-                    let val: usize = match val.try_into() {
+                    let val: isize = match val.try_into() {
                         Ok(x) => x,
                         Err(_) => return b'.',
                     };
-                    if (i.saturating_sub(1)..=usize::min(40, i + 1)).contains(&val) {
+                    if ((i as isize) - 1..=(i as isize) + 1).contains(&val) {
                         b'#'
                     } else {
                         b'.'
