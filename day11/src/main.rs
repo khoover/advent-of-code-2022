@@ -6,9 +6,9 @@ use tap::tap::Tap;
 fn main() -> Result<()> {
     color_eyre::install()?;
 
-    let mut sample_input: [Monkey; 4] = [
+    let mut sample_input = [
         Monkey {
-            items: vec![79, 98],
+            items: ArrayVec::new().tap_mut(|v| v.extend([79, 98])),
             op: (Operation::Mult, Argument::Constant(19)),
             test: TestAndTargets {
                 argument: 23,
@@ -17,7 +17,7 @@ fn main() -> Result<()> {
             },
         },
         Monkey {
-            items: vec![54, 65, 75, 74],
+            items: ArrayVec::new().tap_mut(|v| v.extend([54, 65, 75, 74])),
             op: (Operation::Add, Argument::Constant(6)),
             test: TestAndTargets {
                 argument: 19,
@@ -26,7 +26,7 @@ fn main() -> Result<()> {
             },
         },
         Monkey {
-            items: vec![79, 60, 97],
+            items: ArrayVec::new().tap_mut(|v| v.extend([79, 60, 97])),
             op: (Operation::Mult, Argument::Old),
             test: TestAndTargets {
                 argument: 13,
@@ -35,7 +35,7 @@ fn main() -> Result<()> {
             },
         },
         Monkey {
-            items: vec![74],
+            items: ArrayVec::new().tap_mut(|v| v.extend([74])),
             op: (Operation::Add, Argument::Constant(3)),
             test: TestAndTargets {
                 argument: 17,
@@ -45,15 +45,17 @@ fn main() -> Result<()> {
         },
     ];
 
+    let sample_times_inspecting =
+        get_times_inspecting::<20, 4, 10>(&mut sample_input.clone(), Reducer::Part1);
+    println!("part1 sample: {:?}", sample_times_inspecting);
     let big_modulo: u64 = 17 * 13 * 19 * 23;
-    println!("{:x}", big_modulo);
-
-    let sample_times_inspecting = get_times_inspecting::<4, 10>(&mut sample_input, big_modulo);
-    println!("sample: {:?}", sample_times_inspecting);
+    let sample_times_inspecting =
+        get_times_inspecting::<20, 4, 10>(&mut sample_input, Reducer::Part2(big_modulo));
+    println!("part2 sample: {:?}", sample_times_inspecting);
 
     let mut input = [
         Monkey {
-            items: vec![74, 73, 57, 77, 74],
+            items: ArrayVec::new().tap_mut(|v| v.extend([74, 73, 57, 77, 74])),
             op: (Operation::Mult, Argument::Constant(11)),
             test: TestAndTargets {
                 argument: 19,
@@ -62,7 +64,7 @@ fn main() -> Result<()> {
             },
         },
         Monkey {
-            items: vec![99, 77, 79],
+            items: ArrayVec::new().tap_mut(|v| v.extend([99, 77, 79])),
             op: (Operation::Add, Argument::Constant(8)),
             test: TestAndTargets {
                 argument: 2,
@@ -71,7 +73,7 @@ fn main() -> Result<()> {
             },
         },
         Monkey {
-            items: vec![64, 67, 50, 96, 89, 82, 82],
+            items: ArrayVec::new().tap_mut(|v| v.extend([64, 67, 50, 96, 89, 82, 82])),
             op: (Operation::Add, Argument::Constant(1)),
             test: TestAndTargets {
                 argument: 3,
@@ -80,7 +82,7 @@ fn main() -> Result<()> {
             },
         },
         Monkey {
-            items: vec![88],
+            items: ArrayVec::new().tap_mut(|v| v.extend([88])),
             op: (Operation::Mult, Argument::Constant(7)),
             test: TestAndTargets {
                 argument: 17,
@@ -89,7 +91,7 @@ fn main() -> Result<()> {
             },
         },
         Monkey {
-            items: vec![80, 66, 98, 83, 70, 63, 57, 66],
+            items: ArrayVec::new().tap_mut(|v| v.extend([80, 66, 98, 83, 70, 63, 57, 66])),
             op: (Operation::Add, Argument::Constant(4)),
             test: TestAndTargets {
                 argument: 13,
@@ -98,7 +100,7 @@ fn main() -> Result<()> {
             },
         },
         Monkey {
-            items: vec![81, 93, 90, 61, 62, 64],
+            items: ArrayVec::new().tap_mut(|v| v.extend([81, 93, 90, 61, 62, 64])),
             op: (Operation::Add, Argument::Constant(7)),
             test: TestAndTargets {
                 argument: 7,
@@ -107,7 +109,7 @@ fn main() -> Result<()> {
             },
         },
         Monkey {
-            items: vec![69, 97, 88, 93],
+            items: ArrayVec::new().tap_mut(|v| v.extend([69, 97, 88, 93])),
             op: (Operation::Mult, Argument::Old),
             test: TestAndTargets {
                 argument: 5,
@@ -116,7 +118,7 @@ fn main() -> Result<()> {
             },
         },
         Monkey {
-            items: vec![59, 80],
+            items: ArrayVec::new().tap_mut(|v| v.extend([59, 80])),
             op: (Operation::Add, Argument::Constant(6)),
             test: TestAndTargets {
                 argument: 11,
@@ -125,18 +127,19 @@ fn main() -> Result<()> {
             },
         },
     ];
+
+    let input_times_inspecting =
+        get_times_inspecting::<20, 8, 36>(&mut input.clone(), Reducer::Part1);
+    println!("part1 input is {:?}", input_times_inspecting);
     let big_modulo = input
         .iter()
         .map(|monkey| monkey.test.argument)
         .reduce(|prod, val| prod.checked_mul(val).unwrap())
         .unwrap();
-    println!("{:x}", big_modulo);
-
-    let input_times_inspecting = get_times_inspecting::<8, 36>(&mut input, big_modulo);
-    println!("input is {:?}", input_times_inspecting);
-
+    let input_times_inspecting =
+        get_times_inspecting::<10000, 8, 36>(&mut input, Reducer::Part2(big_modulo));
     println!(
-        "input monkey business is {}",
+        "part2 input monkey business is {}",
         input_times_inspecting
             .into_iter()
             .collect::<BinaryHeap<_>>()
@@ -149,16 +152,16 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn get_times_inspecting<const N: usize, const LIMIT: usize>(
-    monkeys: &mut [Monkey; N],
-    big_modulo: u64,
+fn get_times_inspecting<const ITERS: usize, const N: usize, const LIMIT: usize>(
+    monkeys: &mut [Monkey<LIMIT>; N],
+    reducer: Reducer,
 ) -> [usize; N] {
     let mut times_inspecting: [usize; N] = [0; N];
 
-    for _ in 0..10000 {
+    for _ in 0..ITERS {
         for i in 0..N {
             monkeys[i]
-                .run_round(big_modulo)
+                .run_round(reducer)
                 .collect::<ArrayVec<_, LIMIT>>()
                 .tap(|vec| times_inspecting[i] += vec.len())
                 .into_iter()
@@ -170,24 +173,38 @@ fn get_times_inspecting<const N: usize, const LIMIT: usize>(
 }
 
 #[derive(Debug, Clone)]
-struct Monkey {
-    items: Vec<u64>,
+struct Monkey<const LIMIT: usize> {
+    items: ArrayVec<u64, LIMIT>,
     op: (Operation, Argument),
     test: TestAndTargets,
 }
 
-impl Monkey {
-    fn run_round(&'_ mut self, big_modulo: u64) -> impl Iterator<Item = (usize, u64)> + '_ {
+impl<const LIMIT: usize> Monkey<LIMIT> {
+    fn run_round(&'_ mut self, reducer: Reducer) -> impl Iterator<Item = (usize, u64)> + '_ {
         self.items
             .drain(..)
             .map(|old| self.op.0.run(old, self.op.1))
-            .map(move |new| new % big_modulo)
-            //.map(|new| new.div_euclid(3)) Part 1
+            .map(move |new| reducer.reduce(new))
             .map(|new| (self.test.get_next_monkey(new), new))
     }
 
     fn add_item(&mut self, item: u64) {
         self.items.push(item);
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Reducer {
+    Part1,
+    Part2(u64),
+}
+
+impl Reducer {
+    fn reduce(self, new: u64) -> u64 {
+        match self {
+            Reducer::Part1 => new.div_euclid(3),
+            Reducer::Part2(modulo) => new % modulo,
+        }
     }
 }
 
