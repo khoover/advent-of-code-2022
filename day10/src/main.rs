@@ -9,6 +9,7 @@ use tap::pipe::Pipe;
 fn main() -> Result<()> {
     color_eyre::install()?;
 
+    #[allow(unused_mut)]
     let mut reg_values = get_buffered_input()
         .lines()
         .map(|line| Ok(parser::instruction(&line?)?.1))
