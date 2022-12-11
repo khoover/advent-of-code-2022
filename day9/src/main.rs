@@ -3,12 +3,17 @@ use std::io::BufRead;
 
 use anyhow::{bail, Result};
 use common_utils::get_buffered_input;
+use tap::pipe::Pipe;
 
 fn main() -> Result<()> {
-    let count = get_distinct_spaces::<2>(get_buffered_input().lines())?;
+    let count = get_buffered_input()
+        .lines()
+        .pipe(get_distinct_spaces::<2>)?;
     println!("Num distinct is {}", count);
 
-    let count = get_distinct_spaces::<10>(get_buffered_input().lines())?;
+    let count = get_buffered_input()
+        .lines()
+        .pipe(get_distinct_spaces::<10>)?;
     println!("Num long distinct is {}", count);
     Ok(())
 }
@@ -127,14 +132,17 @@ mod parse {
     }
 
     pub(super) fn parse_move(s: &str) -> Result<(&str, Move)> {
-        Ok(map(
+        map(
             separated_pair(direction, tag(" "), nom_u16),
             |(dir, steps)| Move { dir, steps },
         )(s)
         .finish()
-        .map_err(|e| Error {
-            input: e.input.to_owned(),
-            code: e.code,
-        })?)
+        .map_err(|e| {
+            Error {
+                input: e.input.to_owned(),
+                code: e.code,
+            }
+            .into()
+        })
     }
 }
