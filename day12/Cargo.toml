@@ -1,0 +1,16 @@
+[package]
+name = "day12"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+color-eyre = { version = "0.6.2", default-features = false }
+#arrayvec = "0.7.2"
+common_utils = { path = "../common_utils" }
+#index_many = "0.6.1"
+itertools = "0.10.5"
+#nom = "7.1.1"
+tap = "1.0.1"
+pathfinding = "4.0.0"
