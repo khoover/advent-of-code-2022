@@ -22,14 +22,3 @@ where
         Err(e) => Err(eyre!("Parsing error: {}", e)),
     }
 }
-
-pub fn parse_io_line<O, E, ParseFn>(line: std::io::Result<String>, parser: ParseFn) -> Result<O>
-where
-    E: for<'s> ParseError<&'s str> + std::error::Error,
-    ParseFn: for<'s> Parser<&'s str, O, E>,
-{
-    match line {
-        Ok(s) => parse_line(&s, parser),
-        Err(e) => Err(e.into()),
-    }
-}
